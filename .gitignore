@@ -1,0 +1,5 @@
+genFaceFeature/freesdk*
+genFaceFeature/genFaceFeature
+genFaceFeature/*.o
+faceDB
+NemoFaceDemo.pro.user
