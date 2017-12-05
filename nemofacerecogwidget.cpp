@@ -47,10 +47,11 @@ void NemoFaceRecogWidget::doFaceRecognition()
     if (inotifyRunning)
     {
         inotifyRunning = false;
-        inotify_thread->join();
-        delete inotify_thread;
         fr_thread->join();
         delete fr_thread;
+        inotify_thread->join();
+        delete inotify_thread;
+
     }
     else
     {
@@ -253,10 +254,12 @@ void NemoFaceRecogWidget::frThreadProc(void *args)
 
     while (((NemoFaceRecogWidget*)args)->inotifyRunning)
     {
+
         fileName = "";
-        ((NemoFaceRecogWidget*)args)->fileQueue.pop(fileName);
+        ((NemoFaceRecogWidget*)args)->fileQueue.try_pop(fileName);
         if (!fileName.empty())
         {
+
            // fprintf(stderr, fileName.c_str());
             fileName = ((NemoFaceRecogWidget*)args)->faceImageDir + "/" + fileName;
             QImage img;
