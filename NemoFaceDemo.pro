@@ -5,12 +5,15 @@
 #-------------------------------------------------
 
 QT       += core gui
-
+#FileAdd
+QT += core
+QT += gui
+QT += widgets
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets multimedia
 
 TARGET = NemoFaceDemo
 TEMPLATE = app
-
+CONFIG += C++11
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which has been marked as deprecated (the exact warnings
 # depend on your compiler). Please consult the documentation of the
@@ -23,37 +26,24 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 INCLUDEPATH += inc
-LIBS        +=  -L../NemoFaceDemo/lib/linux_x64 -larcsoft_fsdk_face_detection -larcsoft_fsdk_face_tracking -larcsoft_fsdk_face_recognition -ljpeg
+LIBS        +=  -L/home/deepglint/Documents/qtCode/DoorFace/NemoFace/lib/linux_x64 -larcsoft_fsdk_face_detection -larcsoft_fsdk_face_tracking -larcsoft_fsdk_face_recognition -ljpeg
 
 SOURCES += \
             main.cpp \
         mainwindow.cpp \
     arcfaceengine.cpp \
-    camerasource.cpp \
     faceviewwidget.cpp \
-    glhelper.cpp \
     rgb2yuv.cpp \
-    videofilesource.cpp \
-    cameravideowidget.cpp \
-    nemofacerecogwidget.cpp \
-    jpegfile.cpp \
-    facestillimageview.cpp
+    nemofacerecogwidget.cpp
 
 HEADERS += \
         mainwindow.h \
     arcfaceengine.h \
-    camerasource.h \
     faceviewwidget.h \
-    glhelper.h \
     key.h \
     rgb2yuv.h \
     SafeQueue.hpp \
-    videofilesource.h \
-    framesource.h \
-    cameravideowidget.h \
-    nemofacerecogwidget.h \
-    jpegfile.h \
-    facestillimageview.h
+    nemofacerecogwidget.h
 
 FORMS += \
         mainwindow.ui

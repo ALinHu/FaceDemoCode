@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>955</width>
+    <height>675</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,25 +22,15 @@
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="CameraVideoWidget" name="cameraVideoWidget">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="FaceStillImageView" name="faceStillImageView"/>
-    </item>
-    <item>
      <widget class="NemoFaceRecogWidget" name="faceRecogWidget">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
       <property name="rowCount">
-       <number>3</number>
+       <number>4</number>
       </property>
       <property name="columnCount">
-       <number>4</number>
+       <number>5</number>
       </property>
       <attribute name="horizontalHeaderVisible">
        <bool>false</bool>
@@ -66,36 +56,26 @@
       <row/>
       <row/>
       <row/>
+      <row/>
       <column/>
       <column/>
       <column/>
       <column/>
+      <column/>
+      <item row="0" column="0">
+       <property name="text">
+        <string/>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>9</pointsize>
+        </font>
+       </property>
+      </item>
      </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
-       <widget class="QPushButton" name="btnRegCamera">
-        <property name="text">
-         <string>Camera Register</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="btnRegImage">
-        <property name="text">
-         <string>Image Register</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="btnFaceRecog">
-        <property name="text">
-         <string>Face Recognition</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
+     <layout class="QHBoxLayout" name="horizontalLayout"/>
     </item>
    </layout>
   </widget>
@@ -104,19 +84,9 @@
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
-   <class>CameraVideoWidget</class>
-   <extends>QOpenGLWidget</extends>
-   <header>cameravideowidget.h</header>
-  </customwidget>
-  <customwidget>
    <class>NemoFaceRecogWidget</class>
    <extends>QTableWidget</extends>
    <header>nemofacerecogwidget.h</header>
-  </customwidget>
-  <customwidget>
-   <class>FaceStillImageView</class>
-   <extends>QGraphicsView</extends>
-   <header>facestillimageview.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

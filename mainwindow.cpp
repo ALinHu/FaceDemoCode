@@ -1,6 +1,16 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+//FileAdd
+#include <QDir>
+#include <QTime>
+#include <QTimer>
+#include <QSound>
+#include <QFileDialog>
+#include <QTextStream>
+QString path = "/home/deepglint/ftp_svr_dir/1018009415";
+QString dspath = "/home/deepglint/ftp_svr_dir/1018009415/q";
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -8,14 +18,20 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     arcFaceEngine = new ArcFaceEngine();
-    ui->cameraVideoWidget->setArcFaceEngine(arcFaceEngine);
     ui->faceRecogWidget->setArcFaceEngine(arcFaceEngine);
-    ui->faceStillImageView->setArcFaceEngine(arcFaceEngine);
-
+    ui->faceRecogWidget->doFaceRecognition();
     arcFaceEngine->loadFaceDB();
 
-    on_btnFaceRecog_clicked();
+    //FileAdd
+    sound = new QSound("/home/deepglint/Music/189.wav",this);
 
+    QTimer *timer1 = new QTimer(this);
+    connect(timer1,&QTimer::timeout,this,&MainWindow::timerUpdate1);
+    timer1->start(1000);
+
+    QTimer *timer2 = new QTimer(this);
+    connect(timer2,&QTimer::timeout,this,&MainWindow::timerUpdate2);
+    timer2->start(60000);
 }
 
 MainWindow::~MainWindow()
@@ -23,31 +39,44 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_btnRegCamera_clicked()
+//FileAdd
+void MainWindow::timerUpdate1()
 {
-    ui->cameraVideoWidget->show();
-    ui->faceStillImageView->hide();
-    ui->faceRecogWidget->hide();
-
-    ui->cameraVideoWidget->registerFaceFromCamera();
+    QDir dir(path);
+    QStringList currEntryList = currentContent[path];
+    QStringList newEntryList = dir.entryList(QDir::NoDotAndDotDot  |
+                           QDir::AllDirs | QDir::Files, QDir::DirsFirst);
+    QSet<QString> curDirSet = QSet<QString>::fromList(currEntryList);
+    QSet<QString> newDirSet = QSet<QString>::fromList(newEntryList);
+    QSet<QString> newFiles = newDirSet - curDirSet;
+    QStringList newFile = newFiles.toList();
+    currentContent[path] = newEntryList;
+    if(!newFile.isEmpty())
+    {
+        sound->play();
+    }
 }
 
-void MainWindow::on_btnRegImage_clicked()
+void MainWindow::timerUpdate2()
 {
-    ui->cameraVideoWidget->hide();
-    ui->faceStillImageView->show();
-    ui->faceRecogWidget->hide();
+    //------copy and delete dir------//
+    QDir dir(path);
+    QStringList excludeFiles;
+    dir.setFilter(QDir::Files);
+    QFileInfoList list = dir.entryInfoList();
+    int count = list.count();
+    for(int i=0;i<count;i++)
+    {
+        QFileInfo fileInfo = list.at(i);
+        QString fileName = fileInfo.fileName();
+        if(excludeFiles.indexOf(fileName)!=-1)
+            continue;
+        if(!dir.exists(dspath))
+            dir.mkpath(dspath);
+        QString newSrcFileName = path + "/" + fileInfo.fileName();
+        QString newDstFileName = dspath+ "/" + fileInfo.fileName();
+        QFile(newSrcFileName).copy(newDstFileName);
+    }
+    for(int j = 0;j < count;j++)
+        dir.remove(dir[j]);
 }
-
-void MainWindow::on_btnFaceRecog_clicked()
-{
-    ui->cameraVideoWidget->closeCamera();
-
-    ui->cameraVideoWidget->hide();
-    ui->faceStillImageView->hide();
-    ui->faceRecogWidget->show();
-
-    ui->faceRecogWidget->doFaceRecognition();
-}
-
-

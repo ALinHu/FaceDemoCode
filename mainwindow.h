@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 #include "arcfaceengine.h"
+#include <QMap>
+#include <QSound>
 
 namespace Ui {
 class MainWindow;
@@ -17,13 +19,20 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_btnRegCamera_clicked();
-    void on_btnRegImage_clicked();
-    void on_btnFaceRecog_clicked();
+    //void on_btnRegCamera_clicked();
+    //void on_btnRegImage_clicked();
+    //void on_btnFaceRecog_clicked();
+
+    //FileAdd
+    void timerUpdate1();
+    void timerUpdate2();
 
 private:
     Ui::MainWindow *ui;
     ArcFaceEngine *arcFaceEngine;
+
+    QMap<QString,QStringList> currentContent;
+    QSound *sound;
 };
 
 #endif // MAINWINDOW_H

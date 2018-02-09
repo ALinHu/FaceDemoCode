@@ -1,31 +1,34 @@
 #include "nemofacerecogwidget.h"
 #include <QMessageBox>
 #include <QHeaderView>
-
 #include <unistd.h>
 #include <sys/inotify.h>
 #include <fcntl.h>
-
 #include "rgb2yuv.h"
-
 #include <QDebug>
 #include <QSettings>
+
+//FileAdd
+#include <QFileInfo>
+#include <QDir>
+#include <QTextStream>
+#include <QTime>
+QString Path = "/home/deepglint/ftp_svr_dir/1018009415";
+QString Document = "/home/deepglint/ftp_svr_dir/myfile.time";
+QString imageTime,imageName,LogInfo;
 
 NemoFaceRecogWidget::NemoFaceRecogWidget(QWidget *parent)
     : QTableWidget(parent)
 {
 
     inotifyRunning = false;
-
     faceImageDir = "";
-
     QSettings user_cfg("config.ini",QSettings::IniFormat);
     user_cfg.beginGroup("config");
     faceImageDir = user_cfg.value("ImageDir").toString().toStdString();
     user_cfg.endGroup();
 
     qDebug() << "faceImageDir: " << faceImageDir.c_str();
-
 
     nemoFaceWidgetIndex = -1;
     for (int i = 0; i < 4; i++)
@@ -34,7 +37,8 @@ NemoFaceRecogWidget::NemoFaceRecogWidget(QWidget *parent)
     horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
-    connect(this, SIGNAL(updateFaceRecogResult(QImage, int, float)),   this, SLOT(ShowFaceRecogResult(QImage, int, float)));
+    connect(this, SIGNAL(updateFaceRecogResult(QImage,
+       int, float)),this, SLOT(ShowFaceRecogResult(QImage, int, float)));
 }
 
 NemoFaceRecogWidget::~NemoFaceRecogWidget()
@@ -51,7 +55,6 @@ void NemoFaceRecogWidget::doFaceRecognition()
         delete fr_thread;
         inotify_thread->join();
         delete inotify_thread;
-
     }
     else
     {
@@ -60,12 +63,6 @@ void NemoFaceRecogWidget::doFaceRecognition()
         fr_thread = new std::thread(frThreadProc, this);
 
     }
-
-
-    //frThread.join();
-    //inotifyThread.join();
-
-
 }
 
 #define EVENT_SIZE (sizeof(struct inotify_event))
@@ -76,10 +73,8 @@ void NemoFaceRecogWidget::inotifyThreadProc(void *args)
     int fd;
     int wd;
     char buffer[EVENT_BUF_LEN];
-
     /*creating the INOTIFY instance*/
     fd = inotify_init();
-
     /*checking for error*/
     if (fd < 0)
     {
@@ -90,24 +85,23 @@ void NemoFaceRecogWidget::inotifyThreadProc(void *args)
     fd_flag = fcntl(fd, F_GETFL, 0);
     fcntl(fd, F_SETFL, fd_flag | O_NONBLOCK);
 
-
-    /*adding the “/tmp” directory into watch list. Here, the suggestion is to validate the existence of the directory before adding into monitoring list.*/
-    wd = inotify_add_watch(fd, ((NemoFaceRecogWidget*)args)->faceImageDir.c_str(), IN_CREATE | IN_DELETE | IN_MOVED_TO);
+    /*adding the “/tmp” directory into watch list. Here, the suggestion is to
+     *  validate the existence of the directory before adding into monitoring list.*/
+    wd = inotify_add_watch(fd, ((NemoFaceRecogWidget*)args)->faceImageDir.c_str(),
+                           IN_CREATE | IN_DELETE | IN_MOVED_TO);
 
     while (((NemoFaceRecogWidget*)args)->inotifyRunning)
     {
         length = ::read(fd, buffer, EVENT_BUF_LEN);
-
         /*checking for error*/
         if (length <= 0)
         {
-            //fprintf(stderr, "length < 0.\n");
-            //perror("read");
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             continue;
         }
         i = 0;
-        /*actually read return the list of change events happens. Here, read the change event one by one and process it accordingly.*/
+        /*actually read return the list of change events happens.
+         * Here, read the change event one by one and process it accordingly.*/
         while (i < length)
         {
             struct inotify_event *event = (struct inotify_event *)&buffer[i];
@@ -138,7 +132,6 @@ void NemoFaceRecogWidget::inotifyThreadProc(void *args)
                     }
                     else
                     {
-                        //fprintf(stderr, "File %s IN_MOVED_TO.\n", event->name);
                         std::string fileName = event->name;
                         const  char *ext = strrchr(fileName.c_str(), '.');
                         string sext(ext+1);
@@ -152,28 +145,14 @@ void NemoFaceRecogWidget::inotifyThreadProc(void *args)
     }
     /*removing the “/tmp” directory from the watch list.*/
     inotify_rm_watch(fd, wd);
-
     /*closing the INOTIFY instance*/
     ::close(fd);
-
-
 }
 
 void NemoFaceRecogWidget::showNemoFace(QString name, QImage image)
 {
-    //QTableWidgetItem()
     qDebug() << "showNemoFace" ;
-
-    //QLabel imgLabel;
-    //QIcon* icon = new QIcon(QPixmap::fromImage(image, Qt::AutoColor));
-    //imgLabel.setPixmap(QPixmap::fromImage(image, Qt::AutoColor));
-    //setItem(1, 1, new QTableWidgetItem(*icon, ""));
-//   // setCellWidget(1, 1, &imgLabel);
-//    repaint();
-   // item(0,0)->setData(Qt::DecorationRole, QPixmap::fromImage(image, Qt::AutoColor));
-    // item(0,0)->setText("aaaaaa");
     setItem(0,0,new QTableWidgetItem("Jan"));
-    //delete icon;
     return;
     nemoFaceWidgetIndex = (nemoFaceWidgetIndex+1) % 4;
     if (nemoFaceWidget[nemoFaceWidgetIndex] == nullptr)
@@ -189,30 +168,38 @@ void NemoFaceRecogWidget::showNemoFace(QString name, QImage image)
 
 void NemoFaceRecogWidget::ShowFaceRecogResult(QImage img, int faceIndex, float score)
 {
-
-    this->removeRow(2);
+    this->removeRow(3);
     this->insertRow(0);
 
     if (0)
     {
         QTableWidgetItem *item = new QTableWidgetItem;
-        item->setData(Qt::DecorationRole, QPixmap::fromImage(img).scaled(256,256, Qt::KeepAspectRatio));
+        item->setData(Qt::DecorationRole, QPixmap::
+                      fromImage(img).scaled(256,256, Qt::KeepAspectRatio));
         setItem(0, 0, item);
         this->item(0, 0)->setTextAlignment(Qt::AlignCenter);
     }
     else if (1)
     {
         QLabel *nemoFaceLabel = new QLabel;
-        nemoFaceLabel->setPixmap(QPixmap::fromImage(img, Qt::AutoColor).scaled(256,256, Qt::KeepAspectRatio));
+        nemoFaceLabel->setPixmap(QPixmap::
+                      fromImage(img, Qt::AutoColor).scaled(256,256, Qt::KeepAspectRatio));
         nemoFaceLabel->setAlignment(Qt::AlignCenter);
         setCellWidget(0, 0, nemoFaceLabel);
 
-        QTableWidgetItem *itemScore = new QTableWidgetItem(QString("%1 %2").arg(score * 100).arg("%"));
+        QTableWidgetItem *itemScore = new QTableWidgetItem
+                (QString("%1 %2").arg(score * 100).arg("%"));
         itemScore->setTextAlignment(Qt::AlignCenter);
         QFont font;
         font.setPointSize(20);
         itemScore->setFont(font);
         setItem(0, 1, itemScore);
+
+        QTableWidgetItem *itemTime = new QTableWidgetItem(imageTime);
+        itemTime->setTextAlignment(Qt::AlignCenter);
+        font.setPointSize(20);
+        itemTime->setFont(font);
+        setItem(0, 2, itemTime);
 
         QString faceName = mArcFaceEngine->getRegFaceNameByIndex(faceIndex);
         QString fileNameLow = "./faceDB/" + faceName + ".jpg";
@@ -230,20 +217,25 @@ void NemoFaceRecogWidget::ShowFaceRecogResult(QImage img, int faceIndex, float s
         if (loadFileSuccess)
         {
             QLabel *dbFaceLabel = new QLabel;
-            dbFaceLabel->setPixmap(QPixmap::fromImage(dbFaceImg, Qt::AutoColor).scaled(256,256, Qt::KeepAspectRatio));
+            dbFaceLabel->setPixmap(QPixmap::
+                   fromImage(dbFaceImg, Qt::AutoColor).scaled(256,256, Qt::KeepAspectRatio));
             dbFaceLabel->setAlignment(Qt::AlignCenter);
-            setCellWidget(0, 2, dbFaceLabel);
+            setCellWidget(0, 3, dbFaceLabel);
         }
-
 
         QTableWidgetItem *itemName = new QTableWidgetItem(faceName);
         itemName->setTextAlignment(Qt::AlignCenter);
         itemName->setFont(font);
-        setItem(0, 3, itemName);
+        setItem(0, 4, itemName);
+
+        imageName = faceName;
+        qDebug()<<"ImageName:"<<faceName<<endl;
+        qDebug()<<"ImageScore:"<<score<<endl;
     }
     else
     {
-        QIcon *icon = new QIcon(QPixmap::fromImage(img, Qt::AutoColor).scaled(256, 256, Qt::KeepAspectRatio));
+        QIcon *icon = new QIcon(QPixmap::
+                     fromImage(img, Qt::AutoColor).scaled(256, 256, Qt::KeepAspectRatio));
         setItem(0, 0, new QTableWidgetItem(*icon, "abc"));
     }
 }
@@ -270,44 +262,59 @@ void NemoFaceRecogWidget::frThreadProc(void *args)
             }
             img = img.convertToFormat(QImage::Format_RGB888);
 
-            // ((NemoFaceRecogWidget*)args)->showNemoFace("", img);
-
-//            emit(((NemoFaceRecogWidget*)args)->updateFaceRecogResult(img, "aaaaaa", 0.9));
-//            continue;
-
             int frameWidth = img.width();
             int frameHeight = img.height();
             int frameDataSize = frameWidth * frameHeight * 3;
             unsigned char *frameData = new unsigned char[frameDataSize];
             int frameFormat = ASVL_PAF_RGB24_B8G8R8;
-            //rgb24_to_yuv420p(frameData, frameData + frameWidth * frameHeight,frameData +  frameWidth * frameHeight * 5 /4, img.bits(), frameWidth, frameHeight);
             rgb24_to_bgr24(img.bits(), frameData, frameWidth, frameHeight);
 
             int numFace = 0;
             LPAFT_FSDK_FACERES pFaceResult;
 
-            int ret = ((NemoFaceRecogWidget*)args)->mArcFaceEngine->detectFace(frameData, frameWidth, frameHeight, frameFormat, &numFace, &pFaceResult);
-
+            int ret = ((NemoFaceRecogWidget*)args)->mArcFaceEngine->detectFace
+                (frameData, frameWidth, frameHeight, frameFormat, &numFace, &pFaceResult);
             if (numFace <= 0)
             {
-                fprintf(stderr, "???no face detected, %s. return: %d\n", fileName.c_str(), ret);
+                fprintf(stderr, "???no face detected, %s. return: %d\n",
+                        fileName.c_str(), ret);
                 continue;
             }
 
-            fprintf(stderr, "!!!face detected, %s.\n", fileName.c_str());
+            {
+                fprintf(stderr, "!!!face detected, %s.\n", fileName.c_str());
+                QFileInfo info(fileName.c_str());
+                QString imagetime;
+                imagetime += tr("访问时间: %1").arg(info.created().toString
+                                                ("yyyy-MM-dd hh:mm:ss"));
+                imageTime = imagetime;
+                LogInfo = imageName+imagetime;
+                QFile Text(Document);
+                if(Text.open(QFile::WriteOnly | QFile::Append))
+                {
+                    QTextStream out(&Text);
+                    out<<center<<LogInfo<<endl;
+                }
+                Text.close();
+            }
 
             int faceIndex = -1;
             float fscore = 0;
-            ret = ((NemoFaceRecogWidget*)args)->mArcFaceEngine->recognitionFace(frameData, frameWidth, frameHeight, frameFormat, &pFaceResult->rcFace[0], pFaceResult->lfaceOrient, &faceIndex, &fscore);
-
+            ret = ((NemoFaceRecogWidget*)args)->mArcFaceEngine->recognitionFace
+                    (frameData, frameWidth, frameHeight, frameFormat,
+                     &pFaceResult->rcFace[0], pFaceResult->lfaceOrient, &faceIndex, &fscore);
 
             fprintf(stderr, "face recognize, id: %d, score: %f\n", faceIndex, fscore);
 
+            float SCore = 0.500000;
+            if (fscore >= SCore)
+            {
+               qDebug()<<"TureScore:"<<fscore<<endl;
+            }
 
             if (faceIndex >= 0)
-                 emit(((NemoFaceRecogWidget*)args)->updateFaceRecogResult(img, faceIndex, fscore));
-//               ((NemoFaceRecogWidget*)args)->showNemoFace(((NemoFaceRecogWidget*)args)->mArcFaceEngine->getRegFaceName(faceID), img);
-
+                 emit(((NemoFaceRecogWidget*)args)->updateFaceRecogResult
+                    (img, faceIndex, fscore));
         }
         else
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
